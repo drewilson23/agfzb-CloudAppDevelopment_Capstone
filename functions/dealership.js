@@ -3,7 +3,7 @@ function main(params) {
     secret={
    "COUCH_URL": "Your URL",
    "IAM_API_KEY": "Your API_KEY",
-   "COUCH_USERNAME": "62d823ce-50ed-4113-aecd-3e3dd99d3347-bluemix"
+   "COUCH_USERNAME": ""
 };
 
    console.log(params); 

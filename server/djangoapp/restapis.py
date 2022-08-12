@@ -12,22 +12,27 @@ from ibm_watson.natural_language_understanding_v1 \
 # Create a `get_request` to make HTTP GET requests
 # e.g., response = requests.get(url, params=params, headers={'Content-Type': 'application/json'},
 #                                     auth=HTTPBasicAuth('apikey', api_key))
-def get_request(url, **kwargs):
-    print(kwargs)
+def get_request(url, **kwargs):  
+    # If argument contain API KEY
+    api_key = kwargs.get("api_key")
     print("GET from {} ".format(url))
     try:
-        if "apikey" in kwargs:
-            # Call get method of requests library with URL and parameters
-            # Basic authentication GET
-            response = requests.get(url, headers={'Content-Type': 'application/json'},
-                                    params=kwargs, auth=HTTPBasicAuth('apikey', api_key))
+        if api_key:
+            params = dict()
+            params["text"] = kwargs["text"]
+            params["version"] = kwargs["version"]
+            params["features"] = kwargs["features"]
+            params["return_analyzed_text"] = kwargs["return_analyzed_text"]
+            response = requests.get(url, params=params, headers={'Content-Type': 'application/json'},
+                                    auth=HTTPBasicAuth('apikey', api_key))
         else:
-            # no authentication GET
+            # Call get method of requests library with URL and parameters
             response = requests.get(url, headers={'Content-Type': 'application/json'},
-                                    params=kwargs)
+                                    params=kwargs)   
     except:
         # If any error occurs
         print("Network exception occurred")
+
     status_code = response.status_code
     print("With status {} ".format(status_code))
     json_data = json.loads(response.text)
@@ -35,18 +40,15 @@ def get_request(url, **kwargs):
 
 # Create a `post_request` to make HTTP POST requests
 # e.g., response = requests.post(url, params=kwargs, json=payload)
-def post_request(url, json_payload, **kwargs):
+def post_request(url, payload, **kwargs):
     print(kwargs)
-    print(json_payload)
-    try:
-        response = requests.post(url, params=kwargs, json=json_payload)
-    except:
-        print("Something went wrong")
+    print("POST to {} ".format(url))
+    print(payload)
+    response = requests.post(url, params=kwargs, json=payload)
     status_code = response.status_code
     print("With status {} ".format(status_code))
     json_data = json.loads(response.text)
     return json_data
-
 # Create a get_dealers_from_cf method to get dealers from a cloud function
 # def get_dealers_from_cf(url, **kwargs):
 # - Call get_request() with specified arguments
@@ -73,21 +75,19 @@ def get_dealers_from_cf(url, **kwargs):
 
     return results
 
-def get_dealer_by_id(url, dealerid):
-    results = []
+def get_dealer_by_id(url, dealer_id):
     # Call get_request with a URL and dealerId parameter
-    json_result = get_request(url, dealerid=dealerid)
+    json_result = get_request(url, id=dealer_id)
+    #print(json_result)
     if json_result:
-        dealer =  json_result["body"]["rows"]
-        dealer_doc = dealer["doc"]
+        dealer =  json_result["body"]["docs"][0]
+        #print(*dealer)
         # Create a CarDealer object with values in `doc` object
-        dealer_obj = CarDealer(address=dealer_doc["address"], city=dealer_doc["city"], full_name=dealer_doc["full_name"],
-                               id=dealer_doc["id"], lat=dealer_doc["lat"], long=dealer_doc["long"],
-                               short_name=dealer_doc["short_name"],
-                               st=dealer_doc["st"], zip=dealer_doc["zip"], state=dealer_doc["state"])
-        results.append(dealer_obj)
-
-    return results
+        dealer_obj = CarDealer(address=dealer["address"], city=dealer["city"], full_name=dealer["full_name"],
+                               id=dealer["id"], lat=dealer["lat"], long=dealer["long"],
+                               short_name=dealer["short_name"],
+                               st=dealer["st"], zip=dealer["zip"], state=dealer["state"])
+    return dealer_obj
 
 def get_dealer_by_state(url, st):
     results = []
@@ -109,30 +109,36 @@ def get_dealer_by_state(url, st):
 # def get_dealer_by_id_from_cf(url, dealerId):
 # - Call get_request() with specified arguments
 # - Parse JSON results into a DealerView object list
-def get_dealer_reviews_from_cf(url, id):
+def get_dealer_reviews_from_cf(url, **kwargs):
     results = []
-    json_result = get_request(url, id=id)
-    #print(json_result)
+    dealer_id = kwargs.get("id")
+    if id:
+        json_result = get_request(url, id=dealer_id)
+    else:
+        json_result = get_request(url)
+    print(kwargs)
+    print(json_result)
     if json_result:
         reviews = json_result["body"]["data"]["docs"]
-        #print(type(reviews))
+
         for review in reviews:
             try:
-                review_obj = DealerReview(name=review["name"], id=review["id"], 
+                review_obj = DealerReview(name=review["name"], 
                 dealership=review["dealership"], review=review["review"], purchase=review["purchase"],
                 purchase_date=review["purchase_date"], car_make=review['car_make'],
                 car_model=review['car_model'], car_year=review['car_year'], sentiment="none")
             except:
-                review_obj = DealerReview(name = review["name"], id=review["id"],
+                review_obj = DealerReview(name = review["name"],
                 dealership=review["dealership"], review=review["review"], purchase=review["purchase"],
                 purchase_date='none', car_make='none',
                 car_model='none', car_year='none', sentiment="none")
             
-            review_obj.sentiment = analyze_review_sentiments(review_obj.review)      
+            sentiment = analyze_review_sentiments(review_obj.review)
+            #print(sentiment)
+            review_obj.sentiment = sentiment
             results.append(review_obj)
-        #print(review_obj.sentiment)
-    return results
 
+    return results
 # Create an `analyze_review_sentiments` method to call Watson NLU and analyze text
 # def analyze_review_sentiments(text):
 # - Call get_request() with specified arguments
@@ -149,7 +155,7 @@ def analyze_review_sentiments(text):
     
     nlu.set_service_url(url)
     
-    response = nlu.analyze(text=text,
+    response = nlu.analyze(text=text, language="en",
                            features=Features(sentiment=SentimentOptions())).get_result()
     
     #print(json.dumps(response))

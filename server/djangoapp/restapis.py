@@ -60,7 +60,7 @@ def get_dealers_from_cf(url, **kwargs):
     #print(json_result)
     if json_result:
         # Get the row list in JSON as dealers
-        dealers = json_result["body"]["rows"]
+        dealers = json_result["body"]["result"]["rows"]
         # For each dealer object
         for dealer in dealers:
             # Get its content in `doc` object
@@ -78,9 +78,9 @@ def get_dealers_from_cf(url, **kwargs):
 def get_dealer_by_id(url, dealer_id):
     # Call get_request with a URL and dealerId parameter
     json_result = get_request(url, id=dealer_id)
-    #print(json_result)
+    print(json_result)
     if json_result:
-        dealer =  json_result["body"]["docs"][0]
+        dealer =  json_result["body"]["result"]["docs"][0]
         #print(*dealer)
         # Create a CarDealer object with values in `doc` object
         dealer_obj = CarDealer(address=dealer["address"], city=dealer["city"], full_name=dealer["full_name"],
@@ -94,7 +94,7 @@ def get_dealer_by_state(url, st):
     # Call get_request with a URL and dealerId parameter
     json_result = get_request(url, st=st)
     if json_result:
-        dealer =  json_result["body"]["rows"]
+        dealer =  json_result["body"]["result"]["rows"]
         dealer_doc = dealer["doc"]
         # Create a CarDealer object with values in `doc` object
         dealer_obj = CarDealer(address=dealer_doc["address"], city=dealer_doc["city"], full_name=dealer_doc["full_name"],

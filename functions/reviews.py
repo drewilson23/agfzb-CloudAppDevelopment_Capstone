@@ -1,33 +1,23 @@
 import sys
-from cloudant.client import Cloudant
-from cloudant.error import CloudantException
+from ibmcloudant.cloudant_v1 import CloudantV1
+from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 
 def main(dict):
-    secret={
-        "COUCH_URL": "Your URL",
-        "IAM_API_KEY": "Your API_KEY",
-        "COUCH_USERNAME": "Your USERNAME"
-    }
+    authenticator = IAMAuthenticator("")
+    service = CloudantV1(authenticator=authenticator)
+    service.set_service_url("")
     
-    client = Cloudant.iam(
-        account_name=secret["COUCH_USERNAME"],
-        api_key=secret["IAM_API_KEY"],
-        connect=True,
-    )
-    
-    reviews_db = client["reviews"]
+    response = service.post_find(db = 'reviews',selector = {'dealership': {'$eq': int(dict['id'])}}).get_result()
     
     try:
-        selector = {'dealership': {'$eq': int(dict['id'])}}
-        review_result = reviews_db.get_query_result(selector,raw_result=True)
         result = {
             'headers': {'Content-Type':'application/json'},
-            'body': {'data': review_result}
+            'body': {'data': response}
         }
         return result
     
     except:
         return {
             'statusCode': '404',
-            'message': 'dealerId does not exist'     
+            'message': 'Something went wrong'     
         }

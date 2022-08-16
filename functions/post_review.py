@@ -1,32 +1,23 @@
 import sys
-from cloudant.client import Cloudant
-from cloudant.error import CloudantException
+from ibmcloudant.cloudant_v1 import CloudantV1
+from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
 
 def main(dict):
-    secret = {
-         "COUCH_URL": "Your URL",
-        "IAM_API_KEY": "Your API_KEY",
-        "COUCH_USERNAME": "Your USERNAME"
-    };
+    authenticator = IAMAuthenticator("")
+    service = CloudantV1(authenticator=authenticator)
+    service.set_service_url("")
     
-    client = Cloudant.iam(
-        account_name=secret["COUCH_USERNAME"],
-        api_key=secret["IAM_API_KEY"],
-        connect=True,
-        )
+    response = service.post_find(db = 'reviews',selector = {'dealership': {'$eq': int(dict['id'])}}).get_result()
     
-    reviews_db = client["reviews"]
-    
-    new_doc = reviews_db.create_document(dict)
-    
-    if new_doc.exists():
+    try:
         result = {
-            'headers' : {'Content-Type':'application/json'},
-            'body': {'message':"Data Inserted"}
+            'headers': {'Content-Type':'application/json'},
+            'body': {'data': response}
         }
         return result
-    else:
+    
+    except:
         return {
-            'statusCode': 500, 
-            'message': 'Something went wrong'
+            'statusCode': '404',
+            'message': 'Something went wrongt'     
         }

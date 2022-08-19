@@ -1,10 +1,10 @@
   applications:
-  - name: djangoapp
+  - name: dwilson
     routes:
       - route: dwilson.mybluemix.net
     memory: 128M
     buildpack: python_buildpack
-  - name: djangoapp-nginx
+  - name: dwilson-nginx
     routes:
       - route: dwilson.mybluemix.net/static
     memory: 128M
